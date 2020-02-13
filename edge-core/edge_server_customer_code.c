@@ -25,10 +25,12 @@
 
 bool edgeserver_execute_rfs_customer_code(edgeclient_request_context_t *request_ctx)
 {
+    tr_info("XXX - >> edgeserver_execute_rfs_customer_code");
     tr_info("edgeserver_execute_rfs_customer_code %d/%d/%d",
             request_ctx->object_id,
             request_ctx->object_instance_id,
             request_ctx->resource_id);
+    tr_info("XXX - << edgeserver_execute_rfs_customer_code returns true");
     return true;
 }
 

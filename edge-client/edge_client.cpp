@@ -163,6 +163,7 @@ EDGE_LOCAL void edgeclient_execute_failure(edgeclient_request_context_t *ctx)
 
 EDGE_LOCAL void edgeclient_write_success(edgeclient_request_context_t *ctx)
 {
+    tr_info("XXX - >> edgeclient_write_success");
     coap_response_code_e coap_response = COAP_RESPONSE_CHANGED;
     pt_api_result_code_e status = edgeclient_update_resource_value(ctx->device_id,
                                                                    ctx->object_id,
@@ -192,6 +193,7 @@ EDGE_LOCAL void edgeclient_write_success(edgeclient_request_context_t *ctx)
                                           ctx->token_len,
                                           coap_response);
     edgeclient_deallocate_request_context(ctx);
+    tr_info("XXX - << edgeclient_write_success");
 }
 
 EDGE_LOCAL coap_response_code_e map_to_coap_error(int16_t jsonrpc_error_code)
@@ -213,6 +215,7 @@ EDGE_LOCAL coap_response_code_e map_to_coap_error(int16_t jsonrpc_error_code)
 
 EDGE_LOCAL void edgeclient_write_failure(edgeclient_request_context_t *ctx)
 {
+    tr_info("XXX - >> edgeclient_write_failure");
     tr_warn("Writing to protocol translator failed");
     coap_response_code_e coap_response_code = map_to_coap_error(ctx->jsonrpc_error_code);
     edgeclient_send_asynchronous_response(ctx->device_id,
@@ -223,6 +226,7 @@ EDGE_LOCAL void edgeclient_write_failure(edgeclient_request_context_t *ctx)
                                           ctx->token_len,
                                           coap_response_code);
     edgeclient_deallocate_request_context(ctx);
+    tr_info("XXX - << edgeclient_write_failure");
 }
 
 bool edgeclient_endpoint_value_execute_handler(const M2MResourceBase *resource_base,
@@ -274,6 +278,7 @@ bool edgeclient_endpoint_value_set_handler(const M2MResourceBase *resource_base,
                                            uint8_t token_len,
                                            edge_rc_status_e *rc_status)
 {
+    tr_info("XXX - >> edgeclient_endpoint_value_set_handler");
     const char *uri_path = resource_base->uri_path();
     Lwm2mResourceType resource_type = resolve_m2mresource_type(resource_base->resource_instance_type());
     tr_info("Value write initiated to protocol translator for %s with size %u", uri_path, value_length);
@@ -348,6 +353,7 @@ EDGE_LOCAL void edgeclient_send_update_register_conditional_message()
 // This method is "safe", because it's called from libevent event loop, preventing e.g. race-conditions.
 EDGE_LOCAL void edgeclient_on_registered_callback_safe(void *arg)
 {
+    tr_info("XXX - >> edgeclient_on_registered_callback_safe");
     (void) arg;
     tr_debug("edgeclient_on_registered_callback client_data = %p", client_data);
     bool start_registration = edgeclient_is_registration_needed();
@@ -381,6 +387,7 @@ EDGE_LOCAL void edgeclient_on_registered_callback_safe(void *arg)
     // Protocol API will reject incoming registrations from protocol translators when edge core is shutting down so this
     // should not keep looping due to new devices
     if (client->is_interrupt_received() && !start_registration) {
+        tr_info("XXX - >> edgeclient_on_registered_callback_safe calling edgeserver_graceful_shutdown");
         edgeserver_graceful_shutdown();
     }
 #ifdef CLOUD_CLIENT_LIST_OBJECT_DEBUG
@@ -391,18 +398,22 @@ EDGE_LOCAL void edgeclient_on_registered_callback_safe(void *arg)
     if (start_registration) {
         edgeclient_send_update_register_conditional_message();
     }
+    tr_info("XXX - << edgeclient_on_regitered_callback_safe");
 }
 
 EDGE_LOCAL void edgeclient_on_registered_callback(void)
 {
+    tr_info("XXX -  >> edgeclient_on_registered_callback");
     struct event_base *base = edge_server_get_base();
     if (!msg_api_send_message(base, NULL, edgeclient_on_registered_callback_safe)) {
         tr_err("edgeclient_on_registered_callback - cannot send message!");
     }
+    tr_info("XXX -  << edgeclient_on_regitered_callback");
 }
 
 EDGE_LOCAL void edgeclient_on_unregistered_callback_safe(void *arg)
 {
+    tr_info("XXX -  >> edgeclient_on_unregistered_callback_safe");
     tr_debug("on_unregistered_callback_safe");
 #ifdef CLOUD_CLIENT_LIST_OBJECT_DEBUG
     list_objects();
@@ -410,14 +421,17 @@ EDGE_LOCAL void edgeclient_on_unregistered_callback_safe(void *arg)
     client_data->edgeclient_status = UNREGISTERED;
 
     client_data->g_handle_unregister_cb();
+    tr_info("XXX -  << edgeclient_on_unregistered_callback_safe");
 }
 
 EDGE_LOCAL void edgeclient_on_unregistered_callback(void)
 {
+    tr_info("XXX -  >> edgeclient_on_unregistered_callback");
     struct event_base *base = edge_server_get_base();
     if (!msg_api_send_message(base, NULL, edgeclient_on_unregistered_callback_safe)) {
         tr_err("edgeclient_on_unregistered_callback - cannot send message!");
     }
+    tr_info("XXX -  << edgeclient_on_unregistered_callback");
 }
 
 void edgeclient_on_error_callback_safe(edgeclient_error_callback_params_t *params)
@@ -453,13 +467,16 @@ EDGE_LOCAL void edgeclient_on_certificate_renewal_callback(const char *certifica
                                                            ce_status_e status,
                                                            ce_initiator_e initiator)
 {
+    tr_info("XXX -  >> edgeclient_on_certificate_renewal_callback");
     int ret_val = client_data->g_handle_cert_renewal_status_cb(certificate_name, status, initiator, client_data->g_cert_renewal_ctx);
     (void) ret_val;
     // TODO FIXME: what to do if the protocol translator write failed?
+    tr_info("XXX -  << edgeclient_on_certificate_renewal_callback");
 }
 
 pt_api_result_code_e edgeclient_renew_certificate(const char *certificate_name, int *detailed_error)
 {
+    tr_info("XXX -  >> edgeclient_renew_certificate");
     pt_api_result_code_e ret = PT_API_SUCCESS;
     if (client != NULL) {
         ce_status_e status = client->certificate_renew(certificate_name);
@@ -473,6 +490,7 @@ pt_api_result_code_e edgeclient_renew_certificate(const char *certificate_name, 
             }
         }
     }
+    tr_info("XXX -  << edgeclient_renew_certificate");
     return ret;
 }
 
@@ -526,6 +544,7 @@ EDGE_LOCAL bool check_context_is_not_null(struct context *checked_ctx, struct co
 
 bool edgeclient_remove_resources_owned_by_client(void *context)
 {
+    tr_info("XXX - >> edgeclient_remove_resources_owned_by_client");
     int index = 0;
     tr_debug("remove_resources_from_list: list: %p, context: %p", &client_data->resource_list, context);
     while (index < client_data->resource_list.size()) {
@@ -543,11 +562,13 @@ bool edgeclient_remove_resources_owned_by_client(void *context)
             index++;
         }
     }
+    tr_info("XXX - << edgeclient_remove_resources_owned_by_client");
     return true;
 }
 
 uint32_t edgeclient_remove_objects_owned_by_client(void *client_context)
 {
+    tr_info("XXX - >> edgeclient_remove_objects_owned_by_client");
     uint32_t total_removed = 0;
     total_removed += edgeclient_remove_objects_from_list(
             client_data->registered_objects, client_context, &check_context_matches);
@@ -558,6 +579,7 @@ uint32_t edgeclient_remove_objects_owned_by_client(void *client_context)
     if (total_removed > 0) {
         edgeclient_set_update_register_needed();
     }
+    tr_info("XXX - << edgeclient_remove_objects_owned_by_client");
     return total_removed;
 }
 
@@ -578,8 +600,10 @@ EDGE_LOCAL uint32_t remove_all_endpoints()
 
 bool edgeclient_stop()
 {
+    tr_info("XXX - >> edgeclient_stop");
     bool ret_val = true;
     if (!client->is_interrupt_received()) {
+        tr_info("XXX - >> edgeclient_stop (no interrupt received)");
         client->set_interrupt_received();
         bool translators_removed = edgeserver_remove_protocol_translator_nodes();
         uint32_t endpoints_removed = remove_all_endpoints();
@@ -587,12 +611,14 @@ bool edgeclient_stop()
             tr_info("edgeclient_stop - removing %u endpoints translators_removed=%d",
                     endpoints_removed,
                     (int32_t) translators_removed);
+            tr_info("XXX - >> edgeclient_stop calling edgeclient_update_register");
             edgeclient_update_register();
         } else {
             // If registering is already in progress, just wait for the callback
             if (client_data->edgeclient_status != REGISTERING) {
                 tr_info("edgeclient_stop - initiating graceful shutdown when edgeclient status is %d",
                         (int32_t)(client_data->edgeclient_status));
+                tr_info("XXX - >> edgeclient_stop calling edgeserver_graceful_shutdown");
                 edgeserver_graceful_shutdown();
             }
         }
@@ -601,6 +627,7 @@ bool edgeclient_stop()
         edgeserver_exit_event_loop();
         ret_val = false;
     }
+    tr_info("XXX - << edgeclient_stop");
     return ret_val;
 }
 
@@ -645,6 +672,8 @@ void edgeclient_create(const edgeclient_create_parameters_t *params, byoc_data_t
 #endif
 void edgeclient_destroy()
 {
+
+    tr_info("XXX - >> edgeclient_destroy");
     tr_debug("edgeclient_destroy %p", client);
     if (client != NULL) {
         edgeclient_data_free();
@@ -659,9 +688,11 @@ void edgeclient_destroy()
         tr_warn("edgeclient_destroy: sleeping for %d ms for shutdown.", usecs / 1000);
         usleep(usecs);
     }
+    tr_info("XXX - << edgeclient_destroy");
 }
 
 void edgeclient_connect() {
+    tr_info("XXX - >> edgeclient_connect");
     bool start_registration = false;
 #ifdef CLOUD_CLIENT_LIST_OBJECT_DEBUG
     list_objects();
@@ -677,20 +708,25 @@ void edgeclient_connect() {
         tr_debug("Client already registering, defer registration");
     }
     if (start_registration) {
+        tr_info("XXX - >> edgeclient_connect calling start_registration");
         client->start_registration();
     }
 }
 
 void edgeclient_update_register_conditional()
 {
+    tr_info("XXX - >> edgeclient_update_register_conditional");
     tr_debug("update_register_client_conditional");
     if (edgeclient_is_registration_needed()) {  // atomic
+        tr_info("XXX - edgeclient_update_register_conditional calling edgeclient_update_register");
         edgeclient_update_register();
     }
+    tr_info("XXX - << edgeclient_update_register_conditional");
 }
 
 void edgeclient_update_register()
 {
+    tr_info("XXX - >> edgeclient_update_register");
     bool start_registration = false;
 #ifdef CLOUD_CLIENT_LIST_OBJECT_DEBUG
     list_objects();
@@ -710,8 +746,10 @@ void edgeclient_update_register()
         tr_debug("Client already registering, defer registration");
     }
     if (start_registration) {
+        tr_info("XXX - edgeclient_update_register calling start_update_registration");
         client->start_update_registration();
     }
+    tr_info("XXX - << edgeclient_update_register");
 }
 
 bool edgeclient_endpoint_exists(const char *endpoint_name) {
@@ -1321,6 +1359,7 @@ EDGE_LOCAL void setup_config_mountdir()
 
 EDGE_LOCAL void edgeclient_setup_credentials(bool reset_storage, byoc_data_t *byoc_data)
 {
+    tr_info("XXX - >> edgeclient_setup_credentials");
     fcc_status_e status = fcc_init();
     if (status != FCC_STATUS_SUCCESS) {
         tr_error("fcc_init failed with status %d!", status);
@@ -1367,6 +1406,7 @@ EDGE_LOCAL void edgeclient_setup_credentials(bool reset_storage, byoc_data_t *by
         tr_error("Device not configured for Device Management - exit");
         exit(1);
     }
+    tr_info("XXX - << edgeclient_setup_credentials");
 }
 
 /*
@@ -1375,6 +1415,7 @@ EDGE_LOCAL void edgeclient_setup_credentials(bool reset_storage, byoc_data_t *by
 
 EDGE_LOCAL void edgeclient_add_client_objects_for_registering()
 {
+    tr_info("XXX - >> edgeclient_add_client_objects_for_registering");
     // Move pending objects to registering list to be registered
     M2MBaseList::iterator it;
     for (it = client_data->pending_objects.begin(); it != client_data->pending_objects.end(); it++) {
@@ -1397,6 +1438,7 @@ EDGE_LOCAL void edgeclient_add_client_objects_for_registering()
 
     // Give new objects to client
     client->add_objects(list);
+    tr_info("XXX - << edgeclient_add_client_objects_for_registering");
 }
 
 EDGE_LOCAL M2MEndpoint *edgeclient_find_endpoint_from_list(
@@ -1559,9 +1601,11 @@ EDGE_LOCAL M2MResource *edgelient_get_resource(const char *endpoint_name,
 
 EDGE_LOCAL bool edgeclient_is_registration_needed()
 {
+    tr_info("XXX - >> edgeclient_is_registration_needed");
     bool ret;
     ret = client_data->m2m_resources_added_or_removed;
     tr_debug("< is_registration_needed %d", ret);
+    tr_info("XXX - <<(%d) edgeclient_is_registration_needed", ret);
     return ret;
 }
 
@@ -1607,6 +1651,7 @@ bool edgeclient_is_shutting_down()
 
 void edgeclient_destroy_device_list(edge_device_list_t *devices)
 {
+    tr_info("XXX - >> edgeclient_destro_device_list");
     ns_list_foreach_safe(edge_device_entry_t, device, devices) {
         ns_list_foreach_safe(edge_device_resource_entry_t, resource, device->resources) {
             ns_list_remove(device->resources, resource);
@@ -1619,6 +1664,7 @@ void edgeclient_destroy_device_list(edge_device_list_t *devices)
         free(device);
     }
     free(devices);
+    tr_info("XXX - << edgeclient_destro_device_list");
 }
 
 edge_device_list_t *edgeclient_devices()

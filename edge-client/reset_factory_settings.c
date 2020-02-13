@@ -35,15 +35,18 @@
 
 void rfs_finalize_reset_factory_settings()
 {
+    tr_debug("XXX - >> rfs_finalize_reset_factory_settings");
     tr_info("Finalizing rfs settings");
     kcm_status_e kcm_status = kcm_factory_reset();
     if (kcm_status != KCM_STATUS_SUCCESS) {
         tr_err("Failed to do factory reset - %d", kcm_status);
     }
+    tr_debug("XXX - << rfs_finalize_reset_factory_settings");
 }
 
 void rfs_reset_factory_settings_requested(edgeclient_request_context_t *request_ctx)
 {
+    tr_debug("XXX - >> rfs_reset_factory_settings_requested");
     // Send request to main thread, because it's easier to join the RFS thread there.
     rfs_request_message_t *message = (rfs_request_message_t *) calloc(1, sizeof(rfs_request_message_t));
     if (message) {
@@ -55,13 +58,17 @@ void rfs_reset_factory_settings_requested(edgeclient_request_context_t *request_
     } else {
         tr_err("Cannot allocate the reset factory settings request message!");
     }
+    tr_debug("XXX - << rfs_reset_factory_settings_requested");
 }
 
 static void *rfs_thread(void *arg)
 {
+    tr_debug("XXX - >> rfs_thread");
     rfs_thread_param_t *param = arg;
     edgeclient_request_context_t *request_ctx = param->ctx;
+    tr_debug("XXX - rfs_thread calling edgeserver_execute_rfs_customer_code");
     bool success = edgeserver_execute_rfs_customer_code(request_ctx);
+    tr_debug("XXX - rfs_thread ... edgeserver_execute_rfs_customer_code returns %d", success);
 
     rfs_thread_result_t *result = (rfs_thread_result_t *) calloc(1, sizeof(rfs_thread_result_t));
     if (result) {
@@ -82,6 +89,7 @@ static void *rfs_thread(void *arg)
 
 EDGE_LOCAL void rfs_reset_factory_settings_response_cb(void *arg)
 {
+    tr_debug("XXX - >> rfs_reset_factory_settings_response_cb");
     rfs_thread_result_t *rfs_thread_result = (rfs_thread_result_t *) arg;
     tr_debug("Sending response to Cloud");
     edgeclient_request_context_t *request_ctx = rfs_thread_result->request_ctx;
@@ -98,14 +106,17 @@ EDGE_LOCAL void rfs_reset_factory_settings_response_cb(void *arg)
     }
     if (rfs_thread_result->customer_rfs_succeeded) {
         edgeserver_rfs_customer_code_succeeded();
+        tr_debug("XXX - rfs_reset_factory_settings_response_cb calling edge_server_graceful_shutdown");
         edgeserver_graceful_shutdown();
     }
     free(rfs_thread_result);
+    tr_debug("XXX - << rfs_reset_factory_settings_response_cb");
 }
 
 // This will happen in main thread
 EDGE_LOCAL void rfs_reset_factory_settings_request_cb(void *arg)
 {
+    tr_debug("XXX - >> rfs_reset_factory_settings_request_cb");
     tr_debug("rfs_reset_factory_settings_request_cb");
     pthread_t *rfs_thread_p = (pthread_t *) calloc(1, sizeof(pthread_t));
     if (rfs_thread_p == NULL) {
@@ -125,11 +136,13 @@ EDGE_LOCAL void rfs_reset_factory_settings_request_cb(void *arg)
 
     param->thread = rfs_thread_p;
     param->ctx = (edgeclient_request_context_t *) message->request_ctx;
+    tr_debug("XXX - rfs_reset_factory_settings_request_cb creating rfs thread");
     if (!rfs_thread_p || pthread_create(rfs_thread_p, NULL, rfs_thread, (void *) param)) {
         tr_err("Cannot create the rfs thread");
         free(rfs_thread_p);
     }
     free(arg);
+    tr_debug("XXX - << rfs_reset_factory_settings_request_cb");
 }
 
 void rfs_add_factory_reset_resource()
