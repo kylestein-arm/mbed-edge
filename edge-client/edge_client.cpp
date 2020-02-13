@@ -1321,6 +1321,7 @@ EDGE_LOCAL void setup_config_mountdir()
 
 EDGE_LOCAL void edgeclient_setup_credentials(bool reset_storage, byoc_data_t *byoc_data)
 {
+    tr_info("XXX - >> edgeclient_setup_credentials");
     fcc_status_e status = fcc_init();
     if (status != FCC_STATUS_SUCCESS) {
         tr_error("fcc_init failed with status %d!", status);
@@ -1367,6 +1368,7 @@ EDGE_LOCAL void edgeclient_setup_credentials(bool reset_storage, byoc_data_t *by
         tr_error("Device not configured for Device Management - exit");
         exit(1);
     }
+    tr_info("XXX - << edgeclient_setup_credentials");
 }
 
 /*
